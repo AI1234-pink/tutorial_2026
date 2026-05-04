@@ -1,0 +1,84 @@
+---
+title: "Homework 02"
+author: "AIChen"
+date: "2026-03-20"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+
+# Question 1
+
+##This script searches for, installs, and loads the tidyverse package from CRAN.
+
+```{r}
+# Clear environment
+rm(list = ls())
+
+# Search for the package in available CRAN packages
+available.packages()["tidyverse", ]
+
+# Install the package from CRAN
+install.packages("tidyverse", repos = "https://cloud.r-project.org")
+
+# Load the package
+library(tidyverse)
+
+# View package information
+packageVersion("tidyverse")
+
+# View the help documentation for the package
+help(package = "tidyverse")
+
+# View the core sub-packages included in the tidyverse
+tidyverse::tidyverse_packages()
+
+# View the functions in a specific sub-package
+ls("package:dplyr")
+
+# View the datasets in a specific sub-package
+data(package = "ggplot2")
+
+# Load a specific dataset, e.g., mpg
+data("mpg", package = "ggplot2")
+
+# View the help documentation for specific functions and datasets
+help("filter", package = "dplyr")
+help("mpg", package = "ggplot2")
+
+# View the datasets from the datasets package in R memory
+data()
+
+# View all datasets
+data(package = .packages(all.available = TRUE))
+```
+# Question 2
+
+##User-Defined Function with for loop
+```{r}
+x <- rnorm(n = 10, mean = 35, sd = 10)
+
+check_threshold_for2 <- function(vec, threshold = 35) {
+  result <- logical(length(vec))
+  
+  for (i in seq_along(vec)) {
+    result[i] <- vec[i] > threshold
+  }
+  
+  data.frame(value = vec, above_35 = result)
+}
+
+check_threshold_for2(x)
+```
+##User-Defined Function with for the apply family
+```{r}
+x <- rnorm(n = 10, mean = 35, sd = 10)
+
+check_threshold_apply2 <- function(vec, threshold = 35) {
+  result <- sapply(vec, function(i) i > threshold)
+  
+  data.frame(value = vec, above_35 = result)
+}
+
+check_threshold_apply2(x)
+```

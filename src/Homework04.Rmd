@@ -1,0 +1,71 @@
+---
+title: "Homework04"
+author: "AIChen"
+date: "2026-04-07"
+output:
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage[UTF8]{ctex}
+---
+
+
+
+## 1. 从建模目标、建模算法和评估方面，简述机器学习建模与传统统计模型有哪些不同？
+（1）建模目标不同
+传统统计模型更强调解释，关注自变量与因变量之间是否存在显著关系，以及这种关系的方向、大小和统计意义。它的核心是通过模型参数来理解数据背后的机制。
+机器学习建模更强调预测，重点是让模型在新数据上也有较好的泛化能力。即使数据生成过程复杂、难以明确写出统计假设，也可以通过算法从数据中学习规律。
+（2）建模算法不同
+传统统计模型通常是先假设模型形式，再估计参数。例如先设定线性回归、广义线性模型等，再根据样本估计参数，并检验模型是否合理。
+机器学习则通常是从算法出发进行学习。它不一定先严格限定单一模型形式，而是通过训练过程、重采样和调参，在多个候选模型或参数组合中选择效果更好的方案，例如随机森林、提升树等。
+（3）模型评估方式不同
+传统统计模型主要通过显著性检验、置信区间、残差分析、拟合优度等方式评价模型，重点是“模型是否合理、参数是否可靠”。
+机器学习更常用训练集—测试集划分、交叉验证等方式评价模型，并结合 RMSE、MAE、Accuracy、AUC等指标衡量预测能力，重点是“模型在未知数据上是否仍然表现稳定”。
+
+概括来说，传统统计模型更关注解释性和统计推断，而机器学习更关注预测性能和泛化能力。二者并不是完全对立的，而是在研究目的不同的情况下各有侧重。
+
+
+
+## 2. 生态学上常用树模型，包括随机森林、提升回归树。建模步骤包括：数据预处理、拆分数据集、选择特征、算法和训练模型、模型评估等。caret为各种机器学习算法提供了统一模板，加载doubs数据集，请根据问题填空。
+1）对于doubs中的鱼群数据，按照样地，计算各样地鱼类总丰度，作为新列abund。
+```{r message=FALSE, warning=FALSE}
+library(ade4)
+library(caret)
+library(randomForest)
+data(doubs)
+# 1) 计算各样地鱼类总丰度，作为新列 abund
+doubs_data <- doubs$env
+doubs_data$abund <- rowSums(doubs$fish)
+# 简单定义 training_data
+training_data <- doubs_data
+```
+2）利用train()，采用默认boostrap重采样方法，训练随机森林（randomForest）模型
+```{r message=FALSE, warning=FALSE}
+model_rf <- train(abund ~ ., data = training_data, method = "rf")
+```
+3）通过trainControl()，向train()添加10-fold cross-validation重采样，以优化参数
+```{r message=FALSE, warning=FALSE}
+fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+model_rf <- train(abund ~ ., data = training_data, method = "rf", trControl = fitControl)
+```
+4）在train()中，增加中心化和标准化等数据预处理，提高模型精度
+```{r message=FALSE, warning=FALSE}
+model_rf <- train(abund ~ ., data = training_data, method = "rf",
+                  preProcess = c('scale', 'center'),
+                  trControl = fitControl)
+```
+5）rf有mtry和tree两个参数，可以通过expand.grid()设置调优，并在train()添加
+```{r message=FALSE, warning=FALSE}
+grid <- expand.grid(.mtry = c(1:10))
+model_rf <- train(abund ~ ., data = training_data, method = "rf",
+                  preProcess = c('scale', 'center'),
+                  trControl = fitControl,
+                  tuneGrid = grid)
+```
+
+# 3. 什么是递归消除选择？在caret包中，为何选择随机森林等树模型时，没有特征选择这个过程？
+（1）递归消除选择一般指 RFE（Recursive Feature Elimination，递归特征消除）。它的基本思想是：先用全部特征建模，计算各特征的重要性；然后去掉最不重要的一个或一组特征，再重新建模；如此反复，直到得到一组最优特征子集。它本质上是一种包裹式特征选择方法，目标是在尽量保留有效信息的同时减少冗余变量和噪声变量。
+（2）在 caret 中，像随机森林、决策树、提升树这类树模型，通常不再单独强调“先做特征选择”，主要有以下原因：
+第一，树模型本身就带有变量筛选机制。在每一次分裂时，算法会自动从候选变量中选择当前最有用的变量来划分节点，因此无关变量往往不会频繁进入最终决策路径。
+第二，随机森林对冗余变量和噪声变量容忍度较高。随机森林在每次分裂时只抽取部分变量参与竞争，这种机制本身就降低了无关变量对模型的干扰，因此即使不事先筛选变量，模型也能保持较稳定的预测性能。
+第三，树模型能够直接输出变量重要性。随机森林等模型训练完成后，可以直接给出变量重要性排序，因此它往往把“特征选择”融入到了建模过程中，而不是作为一个完全独立的前置步骤。

@@ -1,0 +1,56 @@
+---
+title: "Homework05"
+author: "AIChen"
+date: "2026-04-12"
+output: word_document
+---
+
+
+
+## 1. 请列出基于R脚本获取网络数据的三种方式？一些生态专业数据库提供了API，方便访问和下载数据，其中，API端点指的是什么？
+1.通过 R 包直接访问在线数据库或数据平台 
+   例如使用rgbif访问GBIF，使用rdataretriever下载公开数据库。它的优点是接口已经被封装好，适合重复性分析和标准化调用。
+
+2.通过 Web API 发起请求获取数据  
+   例如用httr2向API端点发送请求，再把返回的JSON 或XML结果解析成 R可以继续处理的数据框。
+
+3.直接从网站下载数据文件
+   例如使用download.file()直接下载.csv、.zip 等文件，再读入R进行分析。这种方式适合获取已经公开整理好的原始文件。
+   
+这三种方法分别对应“包封装访问”“标准接口访问”“文件级下载”。虽然实现方式不同，但本质上都是把网络端的数据获取到本地 R 分析流程中。
+
+4.API端点（API endpoint）指的是客户端发送请求时访问的具体URL 地址，也可以理解为某个资源或服务功能的“入口”。例如，若一个数据库提供物种出现记录查询服务，那么该查询服务对应的URL就是一个API端点。
+
+## 2. 请完成下面的填空，加载R内置数据集Doubs，读取其中鱼类丰富度Spe数据，将Spe导入SQLite数据库，然后基于tidyverse包在数据库内部删除Spe中所有列为0的行，再将数据加载到R环境中。
+1）从ade4包中加载doubs数据集，并读取鱼类丰富度数据fish。
+```{r message=FALSE, warning=FALSE}
+data(doubs, package = "ade4")
+Spe <- doubs$fish
+```
+2）创建和连接名为doubs.sqlite数据库，将Spe导入其中，名为Spe_sqlite。
+```{r message=FALSE, warning=FALSE}
+library(DBI)
+library(RSQLite)
+
+con <- dbConnect(RSQLite::SQLite(), "doubs.sqlite")
+dbWriteTable(con, "Spe_sqlite", Spe, overwrite = TRUE)
+```      
+      
+3)  查看Spe_sqlite，并删除所有列为0的行，然后把数据拉到R内存。
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+Spe_tbl <- tbl(con, "Spe_sqlite")
+
+Spe_tbl_sel <- Spe_tbl %>%
+  filter(if_any(everything(), ~ . != 0))
+
+Spe_local <- collect(Spe_tbl_sel)
+```      
+      
+      
+4) 将Spe_local以csv格式保存到data文件夹里。
+```{r message=FALSE, warning=FALSE}
+dir.create("data", showWarnings = FALSE)
+write.csv(Spe_local, "data/Spe_local.csv", row.names = FALSE)
+```

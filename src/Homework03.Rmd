@@ -1,0 +1,56 @@
+---
+title: "Homework-202603"
+author: "AIChen"
+date: "2026-03-31"
+output: pdf_document
+---
+
+## Question 1:
+
+```{r}
+library(ade4)        # Load the ade4 package to access the built-in dataset doubs
+library(tidyverse)   # Load the tidyverse package, including dplyr and ggplot2
+
+data(doubs)          # Load the doubs dataset from ade4
+env <- doubs$env     # Extract the env data frame from doubs and assign it to env
+
+env %>%                                                  # Start the pipeline with the env data frame
+  select(dfs, alt, oxy, pH) %>%                          # Select the columns dfs, alt, oxy, and pH
+  rename(distance = dfs, oxygen = oxy) %>%              # Rename dfs to distance and oxy to oxygen
+  filter(alt > 200) %>%                                 # Keep rows where alt is greater than 200
+  arrange(desc(alt)) %>%                                # Sort the data in descending order of alt
+  mutate(oxygen_category = ifelse(oxygen > 90,          # Create a new column oxygen_category based on oxygen values
+                                  "High",               # If oxygen > 90, label as High
+                                  "Low")) %>%           # Otherwise, label as Low
+  group_by(oxygen_category) %>%                         # Group the data by oxygen_category
+  summarise(mean_alt = mean(alt, na.rm = TRUE),         # Compute mean alt for each group, ignoring NA values
+            mean_pH = mean(pH, na.rm = TRUE),           # Compute mean pH for each group, ignoring NA values
+            .groups = "drop")                           # Remove grouping after summarisation
+```
+
+## Question 2:
+###2.1 Draw a scatter plot with x = alt and y = oxy
+```{r}
+library(ade4)                         # Load ade4 package
+library(tidyverse)                    # Load tidyverse package, including ggplot2 for visualization
+
+data(doubs)                           # Load the doubs dataset
+env <- doubs$env                      # Extract the env data frame
+
+ggplot(data = env) +                  # Specify env as the data source
+  geom_point(mapping = aes(alt, oxy)) # Draw a scatter plot with alt on x-axis and oxy on y-axis
+
+```
+
+### 2.2 Adjust point color based on dfs in the scatter plot
+
+```{r}
+library(ade4)                                    # Load ade4 package
+library(tidyverse)                               # Load tidyverse package (ggplot2 for plotting)
+
+data(doubs)                                      # Load the doubs dataset
+env <- doubs$env                                 # Extract the env data frame
+
+ggplot(data = env) +                             # Specify env as the data source
+  geom_point(mapping = aes(alt, oxy, color = dfs)) # Draw scatter plot and map color to dfs
+```
